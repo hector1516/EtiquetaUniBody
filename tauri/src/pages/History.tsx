@@ -22,11 +22,11 @@ export default function History() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="card p-4">
-        <h2 className="font-semibold mb-3">Historial de etiquetas emitidas</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
+      <div className="card p-3 flex-1 min-h-0 overflow-hidden">
+        <h2 className="font-semibold mb-2 text-sm">Historial de etiquetas emitidas</h2>
+        <div className="overflow-auto h-full">
+          <table className="w-full text-xs">
             <thead>
               <tr className="text-[var(--text-muted)] border-b border-[var(--border)]">
                 <th className="text-left py-2">ID</th>

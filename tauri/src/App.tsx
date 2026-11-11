@@ -141,7 +141,7 @@ export default function App() {
       </aside>
 
       <ClickSpark sparkColor="var(--accent)" sparkSize={8} sparkRadius={20} sparkCount={6}>
-        <main className="flex-1 overflow-auto p-6 relative" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+        <main className="flex-1 overflow-hidden p-6 relative" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
           {tab === 'dashboard' && <Dashboard events={events} />}
           {tab === 'designer' && <LabelDesigner />}
           {tab === 'history' && <History />}
