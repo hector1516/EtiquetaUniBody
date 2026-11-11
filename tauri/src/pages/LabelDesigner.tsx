@@ -11,6 +11,11 @@ export default function LabelDesigner() {
   const [objs, setObjs] = useState<any[]>([]);
   const [zpl, setZpl] = useState('');
   const [previewCtx, setPreviewCtx] = useState({ SERIAL: 'ABC123', BATCH: 'L001' });
+  const [plcTags, setPlcTags] = useState<any>(null);
+
+  const loadPlcTags = async () => {
+    try { setPlcTags(await api.get('/plc/read')); } catch {}
+  };
 
   const load = async () => {
     try {
@@ -22,7 +27,7 @@ export default function LabelDesigner() {
       }
     } catch {}
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadPlcTags(); const id = setInterval(loadPlcTags, 3000); return () => clearInterval(id); }, []);
 
   const selectTemplate = (t: any) => {
     setSelectedId(t.id);
@@ -87,6 +92,26 @@ export default function LabelDesigner() {
       </div>
 
       <LabelEditor initial={objs} onSave={handleSaveObjs} />
+
+      <div className="card p-4 space-y-3">
+        <h3 className="font-semibold text-zinc-200">Tags del PLC (valores en vivo)</h3>
+        <p className="text-xs text-zinc-400">Usa variables como <code className="text-emerald-400">{'{SERIAL}'}</code>, <code className="text-emerald-400">{'{BATCH}'}</code> en el contenido de los campos de texto. Los valores se capturan al dispararse el trigger.</p>
+        {plcTags ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {Object.entries(plcTags).filter(([k]) => k !== '_vars').map(([k, v]: any) => (
+              <div key={k} className="flex items-center justify-between p-2 rounded bg-zinc-800/50 border border-zinc-700">
+                <div>
+                  <div className="text-xs text-zinc-400">{v.name}</div>
+                  <div className="text-xs font-mono text-zinc-500">{v.tag_name}</div>
+                </div>
+                <div className="text-sm font-mono text-emerald-400">{v.value === null ? '—' : String(v.value)}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-zinc-500">Cargando tags…</div>
+        )}
+      </div>
 
       <div className="card p-4 space-y-3">
         <div className="flex gap-2">

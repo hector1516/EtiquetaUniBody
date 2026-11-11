@@ -194,6 +194,64 @@ def get_config():
         return {r.config_key: r.config_value for r in rows}
     finally:
         s.close()
+def export_config():
+    from ..database import local_db
+    from ..models import Configuration, PlcTag, LabelTemplate
+    s = local_db.Session()
+    try:
+        cfg = {c.config_key: c.config_value for c in s.query(Configuration).all()}
+        tags = [{"name": t.name, "tag_name": t.tag_name, "data_type": t.data_type,
+                 "app_variable": t.app_variable, "is_trigger": t.is_trigger} for t in s.query(PlcTag).all()]
+        tmpls = [{"name": t.name, "width_mm": t.width_mm, "height_mm": t.height_mm,
+                   "canvas_data": t.canvas_data, "is_default": t.is_default} for t in s.query(LabelTemplate).all()]
+        return {"config": cfg, "plc_tags": tags, "templates": tmpls,
+                "exported_at": __import__("datetime").datetime.now().isoformat()}
+    finally:
+        s.close()
+
+class ImportIn(BaseModel):
+    config: Optional[dict] = None
+    plc_tags: Optional[list] = None
+    templates: Optional[list] = None
+
+@router.post("/config/import")
+def import_config(body: ImportIn):
+    from ..database import local_db
+    from ..models import Configuration, PlcTag, LabelTemplate
+    s = local_db.Session()
+    try:
+        if body.config:
+            for k, v in body.config.items():
+                c = s.query(Configuration).filter_by(config_key=k).first()
+                if c:
+                    c.config_value = str(v)
+                else:
+                    s.add(Configuration(config_key=k, config_value=str(v)))
+        if body.plc_tags:
+            # replace all tags
+            s.query(PlcTag).delete()
+            for t in body.plc_tags:
+                s.add(PlcTag(name=t.get("name", ""), tag_name=t.get("tag_name", ""),
+                             data_type=t.get("data_type", "DINT"),
+                             app_variable=t.get("app_variable", "CUSTOM"),
+                             is_trigger=bool(t.get("is_trigger", False))))
+        if body.templates:
+            s.query(LabelTemplate).delete()
+            for t in body.templates:
+                s.add(LabelTemplate(name=t.get("name", "Importada"),
+                                    width_mm=t.get("width_mm", 100.0),
+                                    height_mm=t.get("height_mm", 60.0),
+                                    canvas_data=t.get("canvas_data", "{}"),
+                                    is_default=bool(t.get("is_default", False))))
+        s.commit()
+        global _plc_instance
+        _plc_instance = None
+        return {"ok": True}
+    except Exception as e:
+        s.rollback()
+        raise HTTPException(400, str(e))
+    finally:
+        s.close()
 
 @router.post("/config")
 def set_config(body: ConfigIn):

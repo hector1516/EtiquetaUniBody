@@ -61,7 +61,7 @@ export default function App() {
     <div className="h-full flex">
       <aside className="w-56 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
         <div className="px-4 py-4 flex items-center gap-3 border-b border-zinc-800">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white">E</div>
+          <img src="/logo.png" alt="EtiquetaUniBody" className="w-8 h-8 object-contain" />
           <div>
             <h1 className="text-sm font-semibold leading-tight">Espumado Insight</h1>
             <p className="text-[10px] text-zinc-500">EtiquetaUniBody</p>
@@ -84,12 +84,16 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto p-6 bg-neutral-950">
+      <main className="flex-1 overflow-auto p-6 bg-neutral-950 relative">
         {tab === 'dashboard' && <Dashboard />}
         {tab === 'designer' && <LabelDesigner />}
         {tab === 'history' && <History />}
         {tab === 'settings' && <Settings />}
       </main>
+
+      {/* Watermark logo (bottom-right, large, subtle) */}
+      <img src="/logo.png" alt="" aria-hidden="true"
+        className="pointer-events-none select-none fixed bottom-4 right-4 w-48 opacity-[0.06] z-0" />
 
       {showQuit && (
         <div className="modal" role="dialog" aria-modal="true">

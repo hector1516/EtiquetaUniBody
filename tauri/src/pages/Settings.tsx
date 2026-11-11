@@ -46,7 +46,6 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* PLC */}
       <div className="card p-5 space-y-4">
         <h2 className="font-semibold text-emerald-400">PLC (Allen-Bradley ControlLogix)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -98,7 +97,6 @@ export default function Settings() {
         <button className="btn ok" onClick={addTag}>Agregar tag</button>
       </div>
 
-      {/* Impresora */}
       <div className="card p-5 space-y-4">
         <h2 className="font-semibold text-blue-400">Impresora Zebra (ZPL)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -108,7 +106,6 @@ export default function Settings() {
         <button className="btn ok" onClick={() => saveCfg(['printer_ip', 'printer_port'])}>Guardar impresora</button>
       </div>
 
-      {/* SQL Server */}
       <div className="card p-5 space-y-4">
         <h2 className="font-semibold text-purple-400">SQL Server (auditoría)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,7 +114,7 @@ export default function Settings() {
           {field('sql_user', 'Usuario SQL')}
           {field('sql_password', 'Contraseña SQL', 'password')}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button className="btn ok" onClick={() => saveCfg(['sql_server', 'sql_database', 'sql_user', 'sql_password'])}>Guardar SQL</button>
           <button className="btn ghost" onClick={ensureTable}>Crear tabla en SQL Server</button>
           <button className="btn ghost" onClick={syncNow} disabled={syncing}>{syncing ? 'Sincronizando…' : 'Sincronizar pendientes'}</button>
@@ -128,6 +125,38 @@ export default function Settings() {
             {tableStatus.error ? ` · ${tableStatus.error}` : ''}
           </div>
         )}
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <h2 className="font-semibold text-zinc-200">Exportar / Importar configuración</h2>
+        <p className="text-xs text-zinc-400">Guarda toda la configuración (PLC, impresora, SQL, tags, plantillas) en un archivo JSON para respaldo o para mover a otra PC.</p>
+        <div className="flex gap-2">
+          <button className="btn ok" onClick={async () => {
+            try {
+              const data = await api.get('/config/export');
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = 'etiquetaunibody-config.json'; a.click();
+              URL.revokeObjectURL(url);
+            } catch (e: any) { alert('Error: ' + (e?.message || e)); }
+          }}>Exportar configuración</button>
+          <label className="btn ghost cursor-pointer">
+            Importar configuración
+            <input type="file" accept="application/json" className="hidden" onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              try {
+                const text = await f.text();
+                const data = JSON.parse(text);
+                await api.post('/config/import', data);
+                alert('Configuración importada. Recarga la página.');
+                load();
+              } catch (err: any) { alert('Error: ' + (err?.message || err)); }
+              e.target.value = '';
+            }} />
+          </label>
+        </div>
       </div>
     </div>
   );
