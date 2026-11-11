@@ -2,7 +2,8 @@
 
 use std::process::{Child, Command};
 use std::sync::Mutex;
-use tauri::{Manager, State, WindowEvent};
+use tauri::{Emitter, Manager, State, WindowEvent};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -71,6 +72,46 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .manage(Backend(Mutex::new(None)))
         .setup(|app| {
+            // Native menu bar (Apple HIG desktop)
+            let about_item = PredefinedMenuItem::about(app, Some("Acerca de EtiquetaUniBody"), None).unwrap();
+            let settings_item = MenuItemBuilder::with_id("settings", "Configuración…").accelerator("CmdOrCtrl+,").build(app).unwrap();
+            let quit_item = PredefinedMenuItem::quit(app, Some("Salir")).unwrap();
+            let app_menu = SubmenuBuilder::new(app, "EtiquetaUniBody")
+                .items(&[&about_item, &PredefinedMenuItem::separator(app).unwrap(), &settings_item, &PredefinedMenuItem::separator(app).unwrap(), &quit_item])
+                .build().unwrap();
+
+            let reload_item = MenuItemBuilder::with_id("reload", "Recargar").accelerator("CmdOrCtrl+R").build(app).unwrap();
+            let fullscreen_item = MenuItemBuilder::with_id("fullscreen", "Pantalla completa").accelerator("F11").build(app).unwrap();
+            let view_menu = SubmenuBuilder::new(app, "Ver")
+                .items(&[&reload_item, &PredefinedMenuItem::separator(app).unwrap(), &fullscreen_item])
+                .build().unwrap();
+
+            let minimize_item = PredefinedMenuItem::minimize(app, Some("Minimizar")).unwrap();
+            let maximize_item = PredefinedMenuItem::maximize(app, Some("Maximizar")).unwrap();
+            let close_item = PredefinedMenuItem::close_window(app, Some("Cerrar")).unwrap();
+            let window_menu = SubmenuBuilder::new(app, "Ventana")
+                .items(&[&minimize_item, &maximize_item, &PredefinedMenuItem::separator(app).unwrap(), &close_item])
+                .build().unwrap();
+
+            let help_item = MenuItemBuilder::with_id("help", "Ayuda de EtiquetaUniBody").build(app).unwrap();
+            let help_menu = SubmenuBuilder::new(app, "Ayuda")
+                .items(&[&help_item])
+                .build().unwrap();
+
+            let menu = MenuBuilder::new(app)
+                .items(&[&app_menu, &view_menu, &window_menu, &help_menu])
+                .build().unwrap();
+            app.set_menu(menu).unwrap();
+
+            app.on_menu_event(|app, event| {
+                match event.id().as_ref() {
+                    "settings" => { let _ = app.emit("menu:navigate", "settings"); }
+                    "reload" => { if let Some(w) = app.get_webview_window("main") { let _ = w.eval("window.location.reload()"); } }
+                    "fullscreen" => { if let Some(w) = app.get_webview_window("main") { let _ = w.set_fullscreen(!w.is_fullscreen().unwrap_or(false)); } }
+                    _ => {}
+                }
+            });
+
             #[cfg(target_os = "windows")] { let _ = Command::new("taskkill").args(["/F", "/IM", BACKEND_BIN]).creation_flags(0x08000000).status(); }
             if let Some(path) = backend_path(app.handle()) {
                 let mut cmd = Command::new(&path);
