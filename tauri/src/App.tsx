@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from './api';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import SplitText from './components/SplitText';
+import ClickSpark from './components/ClickSpark';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import LabelDesigner from './pages/LabelDesigner';
@@ -84,7 +86,7 @@ export default function App() {
         <div className="px-4 py-4 flex items-center gap-3 border-b border-zinc-800">
           <img src="/logo.png" alt="EtiquetaUniBody" className="w-8 h-8 object-contain" />
           <div>
-            <h1 className="text-sm font-semibold leading-tight">Espumado Insight</h1>
+            <SplitText text="Espumado Insight" className="text-sm font-semibold leading-tight" />
             <p className="text-[10px] text-zinc-500">EtiquetaUniBody</p>
           </div>
         </div>
@@ -105,12 +107,14 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto p-6 bg-neutral-950 relative">
-        {tab === 'dashboard' && <Dashboard />}
-        {tab === 'designer' && <LabelDesigner />}
-        {tab === 'history' && <History />}
-        {tab === 'settings' && <Settings />}
-      </main>
+      <ClickSpark sparkColor="var(--accent)" sparkSize={8} sparkRadius={20} sparkCount={6}>
+        <main className="flex-1 overflow-auto p-6 bg-neutral-950 relative">
+          {tab === 'dashboard' && <Dashboard />}
+          {tab === 'designer' && <LabelDesigner />}
+          {tab === 'history' && <History />}
+          {tab === 'settings' && <Settings />}
+        </main>
+      </ClickSpark>
 
       {/* Watermark logo (bottom-right, large, subtle) */}
       <img src="/logo.png" alt="" aria-hidden="true"
