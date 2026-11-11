@@ -25,6 +25,7 @@ export default function App() {
   const [showQuit, setShowQuit] = useState(false);
   const [celebration, setCelebration] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     const check = async () => {
@@ -36,7 +37,6 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Poll trigger events for celebration animation
   useEffect(() => {
     const id = setInterval(async () => {
       try {
@@ -50,22 +50,17 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Windows accent color
   useEffect(() => {
     (async () => {
       try {
         const r = await api.get('/system/accent-color');
         if (r?.hex) {
           document.documentElement.style.setProperty('--accent', r.hex);
-          // lighter hover
-          const lighten = (hex: string) => {
-            const n = parseInt(hex.slice(1), 16);
-            const r = Math.min(255, ((n >> 16) & 0xff) + 30);
-            const g = Math.min(255, ((n >> 8) & 0xff) + 30);
-            const b = Math.min(255, (n & 0xff) + 30);
-            return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
-          };
-          document.documentElement.style.setProperty('--accent-hover', lighten(r.hex));
+          const n = parseInt(r.hex.slice(1), 16);
+          const lr = Math.min(255, ((n >> 16) & 0xff) + 30);
+          const lg = Math.min(255, ((n >> 8) & 0xff) + 30);
+          const lb = Math.min(255, (n & 0xff) + 30);
+          document.documentElement.style.setProperty('--accent-hover', `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`);
         }
       } catch {}
     })();
@@ -99,29 +94,34 @@ export default function App() {
 
   return (
     <div className="h-full flex">
-      <aside className="w-56 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
-        <div className="px-4 py-4 flex items-center gap-3 border-b border-zinc-800">
-          <img src="/logo.png" alt="EtiquetaUniBody" className="w-8 h-8 object-contain" />
-          <div>
-            <SplitText text="Espumado Insight" className="text-sm font-semibold leading-tight" />
-            <p className="text-[10px] text-zinc-500">EtiquetaUniBody</p>
-          </div>
+      <aside className={`${sidebarOpen ? 'w-56' : 'w-14'} shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950/80 backdrop-blur-md transition-all duration-200`}>
+        <div className="px-3 py-4 flex items-center gap-3 border-b border-zinc-800">
+          <img src="/logo.png" alt="EtiquetaUniBody" className="w-8 h-8 object-contain shrink-0" />
+          {sidebarOpen && (
+            <div className="min-w-0">
+              <SplitText text="Espumado Insight" className="text-sm font-semibold leading-tight" />
+              <p className="text-[10px] text-zinc-500">EtiquetaUniBody</p>
+            </div>
+          )}
         </div>
         <nav className="flex-1 p-2 space-y-1" aria-label="Navegación principal">
           {NAV.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            <button key={t.id} onClick={() => setTab(t.id)} title={t.label}
               aria-current={tab === t.id ? 'page' : undefined}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                 ${tab === t.id ? 'nav-active' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900'}`}>
-              <span className="w-5 text-center" aria-hidden="true">{t.icon}</span>
-              {t.label}
+              <span className="w-5 text-center shrink-0" aria-hidden="true">{t.icon}</span>
+              {sidebarOpen && <span className="truncate">{t.label}</span>}
             </button>
           ))}
         </nav>
-        <div className="px-4 py-3 border-t border-zinc-800 flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${health ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden="true" />
-          <span className="text-xs text-zinc-400">{health ? 'Backend OK' : 'Sin conexión'}</span>
+        <div className="px-3 py-3 border-t border-zinc-800 flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${health ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden="true" />
+          {sidebarOpen && <span className="text-xs text-zinc-400 truncate">{health ? 'Backend OK' : 'Sin conexión'}</span>}
         </div>
+        <button onClick={() => setSidebarOpen(o => !o)} className="px-3 py-2 border-t border-zinc-800 text-xs text-zinc-500 hover:text-zinc-200 text-left" aria-label="Colapsar sidebar">
+          {sidebarOpen ? '◀ Colapsar' : '▶'}
+        </button>
       </aside>
 
       <ClickSpark sparkColor="var(--accent)" sparkSize={8} sparkRadius={20} sparkCount={6}>
@@ -133,9 +133,7 @@ export default function App() {
         </main>
       </ClickSpark>
 
-      {/* Watermark logo (bottom-right, large, subtle) */}
-      <img src="/logo.png" alt="" aria-hidden="true"
-        className="pointer-events-none select-none fixed bottom-4 right-4 w-48 opacity-[0.06] z-0" />
+      <img src="/logo.png" alt="" aria-hidden="true" className="pointer-events-none select-none fixed bottom-4 right-4 w-40 opacity-[0.05] z-0" />
 
       {showQuit && (
         <div className="modal" role="dialog" aria-modal="true">
@@ -152,6 +150,7 @@ export default function App() {
           </div>
         </div>
       )}
+
       {celebration && (
         <PrintCelebration event={celebration} onClose={() => setCelebration(null)} />
       )}
