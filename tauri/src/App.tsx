@@ -4,6 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import SplitText from './components/SplitText';
 import ClickSpark from './components/ClickSpark';
+import PrintCelebration from './components/PrintCelebration';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import LabelDesigner from './pages/LabelDesigner';
@@ -22,6 +23,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [health, setHealth] = useState<boolean>(false);
   const [showQuit, setShowQuit] = useState(false);
+  const [celebration, setCelebration] = useState<any>(null);
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     const check = async () => {
@@ -30,6 +33,20 @@ export default function App() {
     };
     check();
     const id = setInterval(check, 3000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Poll trigger events for celebration animation
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        const ev = await api.get('/trigger/events');
+        if (Array.isArray(ev) && ev.length > 0) {
+          setCelebration(ev[ev.length - 1]);
+          setEvents(prev => [...ev, ...prev].slice(0, 50));
+        }
+      } catch {}
+    }, 1500);
     return () => clearInterval(id);
   }, []);
 
@@ -109,7 +126,7 @@ export default function App() {
 
       <ClickSpark sparkColor="var(--accent)" sparkSize={8} sparkRadius={20} sparkCount={6}>
         <main className="flex-1 overflow-auto p-6 bg-neutral-950 relative">
-          {tab === 'dashboard' && <Dashboard />}
+          {tab === 'dashboard' && <Dashboard events={events} />}
           {tab === 'designer' && <LabelDesigner />}
           {tab === 'history' && <History />}
           {tab === 'settings' && <Settings />}
@@ -134,6 +151,9 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+      {celebration && (
+        <PrintCelebration event={celebration} onClose={() => setCelebration(null)} />
       )}
     </div>
   );

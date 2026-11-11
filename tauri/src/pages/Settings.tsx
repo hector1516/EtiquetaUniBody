@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
+import { getVersion } from '@tauri-apps/api/app';
 
 export default function Settings() {
   const [cfg, setCfg] = useState<any>({});
@@ -7,13 +10,16 @@ export default function Settings() {
   const [newTag, setNewTag] = useState({ name: '', tag_name: '', data_type: 'DINT', app_variable: 'CUSTOM', is_trigger: false });
   const [tableStatus, setTableStatus] = useState<any>(null);
   const [syncing, setSyncing] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
 
   const load = async () => {
     try { setCfg(await api.get('/config')); } catch {}
     try { setTags(await api.get('/plc/tags')); } catch {}
     try { setTableStatus(await api.get('/audit/tables-status')); } catch {}
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); getVersion().then(setAppVersion).catch(() => setAppVersion('1.0.0')); }, []);
 
   const saveCfg = async (keys: string[]) => {
     const vals: any = {};
@@ -125,6 +131,33 @@ export default function Settings() {
             {tableStatus.error ? ` · ${tableStatus.error}` : ''}
           </div>
         )}
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <h2 className="font-semibold text-zinc-200">Actualizaciones</h2>
+        <div className="text-xs text-zinc-400">Versión actual: <span className="font-mono text-zinc-200">{appVersion || '1.0.0'}</span></div>
+        <div className="flex gap-2">
+          <button className="btn ok" disabled={checking} onClick={async () => {
+            setChecking(true);
+            setUpdateStatus('Buscando actualizaciones…');
+            try {
+              const update = await check();
+              if (update) {
+                setUpdateStatus(`Nueva versión ${update.version} disponible. Descargando…`);
+                await update.downloadAndInstall();
+                setUpdateStatus('Instalada. Reiniciando…');
+                await relaunch();
+              } else {
+                setUpdateStatus('Ya tienes la última versión.');
+              }
+            } catch (e: any) {
+              setUpdateStatus('Error: ' + (e?.message || e));
+            } finally {
+              setChecking(false);
+            }
+          }}>{checking ? 'Buscando…' : 'Buscar actualizaciones'}</button>
+        </div>
+        {updateStatus && <div className="text-xs text-zinc-400">{updateStatus}</div>}
       </div>
 
       <div className="card p-5 space-y-4">
