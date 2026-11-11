@@ -40,9 +40,6 @@ class PLCManager:
             self.client = _PLC()
             self.client.IPAddress = self.ip
             self.client.ProcessorSlot = self.slot
-            # probe
-            r = self.client.Read("__dummy_probe__", 1)
-            # pylogix returns error but connection established; ignore
             self.connected = True
             return True
         except Exception as e:
