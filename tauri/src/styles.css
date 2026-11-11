@@ -5,12 +5,36 @@
 :root { color-scheme: dark; }
 html, body, #root { height: 100%; margin: 0; }
 
+/* Apple HIG: system font stack */
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; }
+
 /* Apple HIG micro-interactions */
 * { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
 button, a, input, select { transition: background-color 120ms, color 120ms, border-color 120ms, transform 80ms, box-shadow 120ms; }
 button:active { transform: scale(0.98); }
+
+/* Apple HIG: focus-visible rings (keyboard navigation) */
+:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; border-radius: 6px; }
+:focus:not(:focus-visible) { outline: none; }
+
+/* Apple HIG: reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Apple HIG: high contrast */
+@media (prefers-contrast: high) {
+  .card { border-width: 2px; border-color: #fff; }
+  button, input, select { border-width: 2px; }
+}
+
 .card { @apply bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl backdrop-blur-md; }
-.btn { @apply px-4 py-2 rounded-lg font-medium transition-all duration-150; }
+.btn { @apply px-4 py-2 rounded-lg font-medium transition-all duration-150 min-h-[28px] min-w-[28px]; }
 .btn.ok { @apply bg-emerald-600 hover:bg-emerald-500 text-white; }
 .btn.danger { @apply bg-red-600 hover:bg-red-500 text-white; }
 .btn.ghost { @apply bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700; }

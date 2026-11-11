@@ -64,9 +64,9 @@ export default function Dashboard() {
           <span className="text-xs text-zinc-500">Eventos de disparo PLC</span>
         </div>
         {events.length === 0 ? (
-          <div className="text-sm text-zinc-500 py-8 text-center">Esperando disparo del PLC…</div>
+          <div className="text-sm text-zinc-500 py-8 text-center" role="status">Esperando disparo del PLC…</div>
         ) : (
-          <div className="space-y-2 max-h-96 overflow-auto">
+          <div className="space-y-2 max-h-96 overflow-auto" aria-live="polite">
             {events.map((e, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700">
                 <span className={`w-2 h-2 rounded-full ${e.status === 'OK' ? 'bg-emerald-500' : 'bg-red-500'}`} />
