@@ -660,6 +660,18 @@ def audit_sync():
         s.close()
     return {"ok": True, "pending": pending}
 
-@router.get("/health")
-def health():
-    return {"status": "ok"}
+@router.get("/system/accent-color")
+def accent_color():
+    # Lee el color de acento de Windows desde el registro
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\DWM")
+        val, _ = winreg.QueryValueEx(key, "AccentColor")
+        winreg.CloseKey(key)
+        # AccentColor es ABGR (0xAABBGGRR) como DWORD
+        r = val & 0xFF
+        g = (val >> 8) & 0xFF
+        b = (val >> 16) & 0xFF
+        return {"hex": f"#{r:02x}{g:02x}{b:02x}", "r": r, "g": g, "b": b}
+    except Exception as e:
+        return {"hex": "#10b981", "r": 16, "g": 185, "b": 129, "error": str(e)}

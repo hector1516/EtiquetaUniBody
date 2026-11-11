@@ -31,6 +31,27 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
+  // Windows accent color
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await api.get('/system/accent-color');
+        if (r?.hex) {
+          document.documentElement.style.setProperty('--accent', r.hex);
+          // lighter hover
+          const lighten = (hex: string) => {
+            const n = parseInt(hex.slice(1), 16);
+            const r = Math.min(255, ((n >> 16) & 0xff) + 30);
+            const g = Math.min(255, ((n >> 8) & 0xff) + 30);
+            const b = Math.min(255, (n & 0xff) + 30);
+            return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+          };
+          document.documentElement.style.setProperty('--accent-hover', lighten(r.hex));
+        }
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     let unlistenMenu: (() => void) | undefined;
     let unlistenQuit: (() => void) | undefined;
@@ -72,7 +93,7 @@ export default function App() {
             <button key={t.id} onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? 'page' : undefined}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                ${tab === t.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900'}`}>
+                ${tab === t.id ? 'nav-active' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900'}`}>
               <span className="w-5 text-center" aria-hidden="true">{t.icon}</span>
               {t.label}
             </button>

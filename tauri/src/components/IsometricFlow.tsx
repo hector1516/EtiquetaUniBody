@@ -64,7 +64,7 @@ export default function IsometricFlow() {
         <h3 className="font-semibold text-zinc-200">Flujo de trabajo en vivo</h3>
         <span className="text-xs text-zinc-500">PLC → PC → Impresora / SQL Server</span>
       </div>
-      <svg viewBox="-20 -120 420 260" className="w-full h-64" style={{ background: 'radial-gradient(ellipse at center, #0f172a 0%, #020617 100%)', borderRadius: 12 }}>
+      <svg viewBox="-20 -140 380 380" className="w-full aspect-square max-w-md mx-auto" style={{ background: 'radial-gradient(ellipse at center, #0f172a 0%, #020617 100%)', borderRadius: 12 }}>
         <defs>
           <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
