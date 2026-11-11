@@ -4,6 +4,7 @@ use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State, WindowEvent};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+use tauri::tray::TrayIconBuilder;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -66,11 +67,18 @@ fn kill_backend(state: &State<Backend>) {
     }
 }
 
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle, state: State<Backend>) {
+    kill_backend(&state);
+    app.exit(0);
+}
+
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(Backend(Mutex::new(None)))
+        .invoke_handler(tauri::generate_handler![quit_app])
         .setup(|app| {
             // Native menu bar (Apple HIG desktop)
             let about_item = PredefinedMenuItem::about(app, Some("Acerca de EtiquetaUniBody"), None).unwrap();
@@ -103,6 +111,35 @@ fn main() {
                 .build().unwrap();
             app.set_menu(menu).unwrap();
 
+            // System tray (Apple HIG: app lives in menu bar, close hides to tray)
+            let show_item = MenuItemBuilder::with_id("tray_show", "Mostrar EtiquetaUniBody").build(app).unwrap();
+            let quit_item = MenuItemBuilder::with_id("tray_quit", "Salir").build(app).unwrap();
+            let tray_menu = MenuBuilder::new(app)
+                .items(&[&show_item, &PredefinedMenuItem::separator(app).unwrap(), &quit_item])
+                .build().unwrap();
+
+            let _tray = TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&tray_menu)
+                .show_menu_on_left_click(true)
+                .on_menu_event(|app, event| {
+                    match event.id().as_ref() {
+                        "tray_show" => {
+                            if let Some(w) = app.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.unminimize();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "tray_quit" => {
+                            let _ = app.emit("tray:quit-request", ());
+                        }
+                        _ => {}
+                    }
+                })
+                .build(app)
+                .unwrap();
+
             app.on_menu_event(|app, event| {
                 match event.id().as_ref() {
                     "settings" => { let _ = app.emit("menu:navigate", "settings"); }
@@ -130,7 +167,21 @@ fn main() {
             }
             Ok(())
         })
-        .on_window_event(|window, event| { if window.label() == "main" && matches!(event, WindowEvent::Destroyed) { kill_backend(&window.state::<Backend>()); } })
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                match event {
+                    WindowEvent::CloseRequested { api, .. } => {
+                        // Apple HIG desktop: close minimizes to tray (menu bar) instead of quitting
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                    WindowEvent::Destroyed => {
+                        kill_backend(&window.state::<Backend>());
+                    }
+                    _ => {}
+                }
+            }
+        })
         .build(tauri::generate_context!())
         .expect("error building EtiquetaUniBody");
     app.run(|app_handle, event| match event { tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => { kill_backend(&app_handle.state::<Backend>()); } _ => {} });

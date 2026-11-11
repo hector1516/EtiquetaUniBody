@@ -16,6 +16,70 @@ _recent_events = []   # lista de eventos de trigger
 _event_lock = threading.Lock()
 _last_trigger_state = {"value": None}
 
+# ---------- helpers de auditoría offline-first ----------
+def _insert_local_audit(serial, batch, zpl, status):
+    from ..database import local_db
+    from ..models import LocalAudit
+    s = local_db.Session()
+    try:
+        rec = LocalAudit(serial_num=str(serial) if serial is not None else None,
+                         batch_id=str(batch) if batch is not None else None,
+                         zpl_payload=zpl, status=status, synced=False)
+        s.add(rec)
+        s.commit()
+        return rec.id
+    except Exception as e:
+        s.rollback()
+        print("[local-audit]", e)
+        return None
+    finally:
+        s.close()
+
+def _sync_one(rec_id):
+    from ..database import local_db, get_remote_db
+    from ..models import LocalAudit, table_exists_sqlserver
+    s = local_db.Session()
+    try:
+        rec = s.query(LocalAudit).filter_by(id=rec_id).first()
+        if not rec or rec.synced:
+            return False
+        db = get_remote_db(server=_cfg_get("sql_server"), database=_cfg_get("sql_database"),
+                           user=_cfg_get("sql_user"), password=_cfg_get("sql_password"))
+        if not table_exists_sqlserver(db.engine):
+            return False
+        if not db.test_connection():
+            return False
+        with db.engine.connect() as c:
+            r = c.execute(__import__("sqlalchemy").text(
+                "INSERT INTO Espumado_Etiquetas_Emitidas (SerialNum, BatchID, ZPL_Payload, Status) VALUES (:s, :b, :z, :st)"),
+                {"s": rec.serial_num, "b": rec.batch_id, "z": rec.zpl_payload, "st": rec.status})
+            c.commit()
+            try:
+                rid = r.lastrowid
+            except Exception:
+                rid = None
+        rec.synced = True
+        rec.remote_id = rid
+        s.commit()
+        return True
+    except Exception as e:
+        print("[sync]", e)
+        s.rollback()
+        return False
+    finally:
+        s.close()
+
+def _sync_all():
+    from ..database import local_db
+    from ..models import LocalAudit
+    s = local_db.Session()
+    try:
+        ids = [r.id for r in s.query(LocalAudit).filter_by(synced=False).all()]
+    finally:
+        s.close()
+    for rid in ids:
+        _sync_one(rid)
+
 def _cfg_get(key, default=""):
     from ..database import local_db
     from ..models import Configuration
@@ -326,18 +390,13 @@ def _handle_trigger(trigger_tag, tag_list, p):
     batch = vars_flat.get("BATCH") or vars_flat.get("Batch_ID") or vars_flat.get("BatchID")
     status = "OK" if res.get("ok") else f"ERROR: {res.get('error')}"
 
-    # log to remote sql
-    try:
-        db = _remote_db()
-        with db.engine.connect() as c:
-            c.execute(__import__("sqlalchemy").text(
-                "INSERT INTO Espumado_Etiquetas_Emitidas (SerialNum, BatchID, ZPL_Payload, Status) VALUES (:s, :b, :z, :st)"),
-                {"s": str(serial) if serial is not None else None,
-                 "b": str(batch) if batch is not None else None,
-                 "z": zpl, "st": status})
-            c.commit()
-    except Exception as e:
-        print("[audit-insert]", e)
+    # log local (offline-first) y sincronizar si hay conexión
+    rid = _insert_local_audit(serial, batch, zpl, status)
+    if rid:
+        try:
+            _sync_one(rid)
+        except Exception as e:
+            print("[sync-trigger]", e)
 
     event = {
         "timestamp": __import__("datetime").datetime.now().isoformat(),
@@ -470,36 +529,33 @@ def print_label(body: PrintLabelIn):
 # ---------- audit / history ----------
 @router.get("/audit")
 def audit_list(limit: int = 100):
+    from ..database import local_db
+    from ..models import LocalAudit
+    s = local_db.Session()
     try:
-        db = _remote_db()
-        with db.engine.connect() as c:
-            rows = c.execute(__import__("sqlalchemy").text(
-                "SELECT TOP (:lim) ID, Timestamp, SerialNum, BatchID, Status FROM Espumado_Etiquetas_Emitidas ORDER BY ID DESC"),
-                {"lim": limit}).fetchall()
+        rows = s.query(LocalAudit).order_by(LocalAudit.id.desc()).limit(limit).all()
         out = []
         for r in rows:
-            out.append({"id": r[0], "timestamp": str(r[1]), "serial": r[2],
-                        "batch": r[3], "status": r[4]})
+            out.append({"id": r.id, "timestamp": str(r.timestamp), "serial": r.serial_num,
+                        "batch": r.batch_id, "status": r.status, "synced": bool(r.synced)})
         return out
-    except Exception as e:
-        return {"error": str(e), "rows": []}
+    finally:
+        s.close()
 
 @router.get("/audit/{aid}")
 def audit_get(aid: int):
+    from ..database import local_db
+    from ..models import LocalAudit
+    s = local_db.Session()
     try:
-        db = _remote_db()
-        with db.engine.connect() as c:
-            r = c.execute(__import__("sqlalchemy").text(
-                "SELECT ID, Timestamp, SerialNum, BatchID, ZPL_Payload, Status FROM Espumado_Etiquetas_Emitidas WHERE ID=:id"),
-                {"id": aid}).fetchone()
+        r = s.query(LocalAudit).filter_by(id=aid).first()
         if not r:
             raise HTTPException(404, "registro no encontrado")
-        return {"id": r[0], "timestamp": str(r[1]), "serial": r[2],
-                "batch": r[3], "zpl": r[4], "status": r[5]}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(400, str(e))
+        return {"id": r.id, "timestamp": str(r.timestamp), "serial": r.serial_num,
+                "batch": r.batch_id, "zpl": r.zpl_payload, "status": r.status,
+                "synced": bool(r.synced)}
+    finally:
+        s.close()
 
 @router.post("/audit/reprint")
 def audit_reprint(body: ReprintIn):
@@ -515,8 +571,36 @@ def audit_reprint(body: ReprintIn):
 
 @router.post("/audit/ensure-table")
 def ensure_table():
-    _ensure_audit_table()
-    return {"ok": True}
+    from ..models import table_exists_sqlserver
+    db = _remote_db()
+    exists = table_exists_sqlserver(db.engine)
+    if not exists:
+        _ensure_audit_table()
+        exists = table_exists_sqlserver(db.engine)
+    return {"ok": True, "exists": exists}
+
+@router.get("/audit/tables-status")
+def tables_status():
+    from ..models import table_exists_sqlserver
+    try:
+        db = _remote_db()
+        conn = db.test_connection()
+        exists = table_exists_sqlserver(db.engine) if conn else False
+        return {"connected": conn, "table_exists": exists}
+    except Exception as e:
+        return {"connected": False, "table_exists": False, "error": str(e)}
+
+@router.post("/audit/sync")
+def audit_sync():
+    _sync_all()
+    from ..database import local_db
+    from ..models import LocalAudit
+    s = local_db.Session()
+    try:
+        pending = s.query(LocalAudit).filter_by(synced=False).count()
+    finally:
+        s.close()
+    return {"ok": True, "pending": pending}
 
 @router.get("/health")
 def health():

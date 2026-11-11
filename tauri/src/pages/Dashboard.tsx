@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import IsometricFlow from '../components/IsometricFlow';
 
 export default function Dashboard() {
   const [events, setEvents] = useState<any[]>([]);
@@ -35,6 +36,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <IsometricFlow />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card p-5">
           <div className="text-xs text-zinc-400 uppercase tracking-wide">PLC</div>

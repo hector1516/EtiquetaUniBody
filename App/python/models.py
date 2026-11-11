@@ -30,10 +30,10 @@ class Configuration(Base):
 class PlcTag(Base):
     __tablename__ = "plc_tags"
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)          # alias amigable
-    tag_name = Column(String(200), nullable=False)      # tag real en PLC (pylogix)
-    data_type = Column(String(20), default="DINT")      # BOOL/DINT/REAL/STRING
-    app_variable = Column(String(50), default="CUSTOM") # variable de app (SERIAL, BATCH, TRIGGER, CUSTOM)
+    name = Column(String(100), nullable=False)
+    tag_name = Column(String(200), nullable=False)
+    data_type = Column(String(20), default="DINT")
+    app_variable = Column(String(50), default="CUSTOM")
     is_trigger = Column(Boolean, default=False)
 
 class LabelTemplate(Base):
@@ -46,7 +46,19 @@ class LabelTemplate(Base):
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# Tabla de auditoría remota (SQL Server) - se crea si no existe
+# Auditoría local (SQLite) — offline-first: siempre se guarda aquí primero
+class LocalAudit(Base):
+    __tablename__ = "local_audit"
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    serial_num = Column(String(100))
+    batch_id = Column(String(100))
+    zpl_payload = Column(Text)
+    status = Column(String(50))
+    synced = Column(Boolean, default=False)   # True cuando ya se envió a SQL Server
+    remote_id = Column(Integer, nullable=True)  # ID en SQL Server tras sync
+
+# Tabla de auditoría remota (SQL Server)
 AUDIT_TABLE_SQL = """
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Espumado_Etiquetas_Emitidas' AND xtype='U')
 CREATE TABLE Espumado_Etiquetas_Emitidas (
@@ -58,3 +70,12 @@ CREATE TABLE Espumado_Etiquetas_Emitidas (
     Status NVARCHAR(50)
 );
 """
+
+def table_exists_sqlserver(engine, table_name="Espumado_Etiquetas_Emitidas"):
+    try:
+        with engine.connect() as c:
+            r = c.execute(__import__("sqlalchemy").text(
+                "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME=:t"), {"t": table_name}).fetchone()
+            return r is not None
+    except Exception:
+        return False

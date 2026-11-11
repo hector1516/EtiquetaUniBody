@@ -5,23 +5,36 @@ export default function Settings() {
   const [cfg, setCfg] = useState<any>({});
   const [tags, setTags] = useState<any[]>([]);
   const [newTag, setNewTag] = useState({ name: '', tag_name: '', data_type: 'DINT', app_variable: 'CUSTOM', is_trigger: false });
+  const [tableStatus, setTableStatus] = useState<any>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     try { setCfg(await api.get('/config')); } catch {}
     try { setTags(await api.get('/plc/tags')); } catch {}
+    try { setTableStatus(await api.get('/audit/tables-status')); } catch {}
   };
   useEffect(() => { load(); }, []);
 
-  const saveCfg = async () => {
-    try { await api.post('/config', { values: cfg }); alert('Configuración guardada'); }
+  const saveCfg = async (keys: string[]) => {
+    const vals: any = {};
+    keys.forEach(k => { if (cfg[k] !== undefined) vals[k] = cfg[k]; });
+    try { await api.post('/config', { values: vals }); alert('Guardado'); load(); }
     catch (e: any) { alert('Error: ' + (e?.message || e)); }
   };
   const addTag = async () => {
     try { await api.post('/plc/tags', newTag); setNewTag({ name: '', tag_name: '', data_type: 'DINT', app_variable: 'CUSTOM', is_trigger: false }); load(); }
     catch (e: any) { alert('Error: ' + (e?.message || e)); }
   };
-  const delTag = async (id: number) => {
-    try { await api.del(`/plc/tags/${id}`); load(); } catch {}
+  const delTag = async (id: number) => { try { await api.del(`/plc/tags/${id}`); load(); } catch {} };
+  const ensureTable = async () => {
+    try { const r = await api.post('/audit/ensure-table'); alert(r.exists ? 'Tabla ya existe / creada' : 'No se pudo crear'); load(); }
+    catch (e: any) { alert('Error: ' + (e?.message || e)); }
+  };
+  const syncNow = async () => {
+    setSyncing(true);
+    try { const r = await api.post('/audit/sync'); alert(`Sincronizado. Pendientes: ${r.pending}`); }
+    catch (e: any) { alert('Error: ' + (e?.message || e)); }
+    finally { setSyncing(false); }
   };
 
   const field = (key: string, label: string, type = 'text') => (
@@ -33,23 +46,16 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* PLC */}
       <div className="card p-5 space-y-4">
-        <h2 className="font-semibold">Conectividad</h2>
+        <h2 className="font-semibold text-emerald-400">PLC (Allen-Bradley ControlLogix)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {field('plc_ip', 'IP del PLC (Allen-Bradley)')}
+          {field('plc_ip', 'IP del PLC')}
           {field('plc_slot', 'Slot del procesador', 'number')}
-          {field('printer_ip', 'IP Impresora Zebra')}
-          {field('printer_port', 'Puerto impresora', 'number')}
-          {field('sql_server', 'Servidor SQL Server')}
-          {field('sql_database', 'Base de datos SQL')}
-          {field('sql_user', 'Usuario SQL')}
-          {field('sql_password', 'Contraseña SQL', 'password')}
         </div>
-        <button className="btn ok" onClick={saveCfg}>Guardar</button>
-      </div>
+        <button className="btn ok" onClick={() => saveCfg(['plc_ip', 'plc_slot'])}>Guardar PLC</button>
 
-      <div className="card p-5 space-y-4">
-        <h2 className="font-semibold">Tags del PLC</h2>
+        <h3 className="font-semibold mt-4">Tags del PLC</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -90,6 +96,38 @@ export default function Settings() {
           </label>
         </div>
         <button className="btn ok" onClick={addTag}>Agregar tag</button>
+      </div>
+
+      {/* Impresora */}
+      <div className="card p-5 space-y-4">
+        <h2 className="font-semibold text-blue-400">Impresora Zebra (ZPL)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field('printer_ip', 'IP de la impresora')}
+          {field('printer_port', 'Puerto', 'number')}
+        </div>
+        <button className="btn ok" onClick={() => saveCfg(['printer_ip', 'printer_port'])}>Guardar impresora</button>
+      </div>
+
+      {/* SQL Server */}
+      <div className="card p-5 space-y-4">
+        <h2 className="font-semibold text-purple-400">SQL Server (auditoría)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field('sql_server', 'Servidor SQL')}
+          {field('sql_database', 'Base de datos')}
+          {field('sql_user', 'Usuario SQL')}
+          {field('sql_password', 'Contraseña SQL', 'password')}
+        </div>
+        <div className="flex gap-2">
+          <button className="btn ok" onClick={() => saveCfg(['sql_server', 'sql_database', 'sql_user', 'sql_password'])}>Guardar SQL</button>
+          <button className="btn ghost" onClick={ensureTable}>Crear tabla en SQL Server</button>
+          <button className="btn ghost" onClick={syncNow} disabled={syncing}>{syncing ? 'Sincronizando…' : 'Sincronizar pendientes'}</button>
+        </div>
+        {tableStatus && (
+          <div className="text-xs text-zinc-400 mt-2">
+            Conexión SQL: {tableStatus.connected ? '✓ OK' : '✗ Sin conexión'} · Tabla: {tableStatus.table_exists ? '✓ Existe' : '✗ No existe'}
+            {tableStatus.error ? ` · ${tableStatus.error}` : ''}
+          </div>
+        )}
       </div>
     </div>
   );

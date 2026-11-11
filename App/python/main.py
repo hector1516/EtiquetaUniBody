@@ -40,6 +40,13 @@ async def lifespan(app: FastAPI):
         start_monitor()
     except Exception as e:
         print("[monitor]", e)
+    # sync thread (offline -> SQL Server)
+    try:
+        import threading
+        from .routes.api import _sync_loop, _poll_stop
+        threading.Thread(target=_sync_loop, daemon=True).start()
+    except Exception as e:
+        print("[sync-thread]", e)
     logger.info("EtiquetaUniBody backend iniciado")
     yield
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from './api';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import LabelDesigner from './pages/LabelDesigner';
@@ -18,6 +19,7 @@ const NAV: { id: Tab; label: string; icon: string }[] = [
 export default function App() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [health, setHealth] = useState<boolean>(false);
+  const [showQuit, setShowQuit] = useState(false);
 
   useEffect(() => {
     const check = async () => {
@@ -29,25 +31,34 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Apple HIG desktop: menu bar drives navigation too.
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    let unlistenMenu: (() => void) | undefined;
+    let unlistenQuit: (() => void) | undefined;
     (async () => {
       try {
-        unlisten = await listen<string>('menu:navigate', (e) => {
-          if (e.payload === 'settings') setTab('settings');
-          if (e.payload === 'dashboard') setTab('dashboard');
-          if (e.payload === 'designer') setTab('designer');
-          if (e.payload === 'history') setTab('history');
+        unlistenMenu = await listen<any>('menu:navigate', (e) => {
+          const p = e.payload;
+          if (p === 'settings') setTab('settings');
+          if (p === 'dashboard') setTab('dashboard');
+          if (p === 'designer') setTab('designer');
+          if (p === 'history') setTab('history');
         });
+        unlistenQuit = await listen('tray:quit-request', () => setShowQuit(true));
       } catch {}
     })();
-    return () => { if (unlisten) unlisten(); };
+    return () => {
+      if (unlistenMenu) unlistenMenu();
+      if (unlistenQuit) unlistenQuit();
+    };
   }, []);
+
+  const confirmQuit = async () => {
+    try { await invoke('quit_app'); } catch {}
+    setShowQuit(false);
+  };
 
   return (
     <div className="h-full flex">
-      {/* Sidebar (Apple HIG desktop: top-level sections in a sidebar) */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
         <div className="px-4 py-4 flex items-center gap-3 border-b border-zinc-800">
           <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white">E</div>
@@ -79,6 +90,22 @@ export default function App() {
         {tab === 'history' && <History />}
         {tab === 'settings' && <Settings />}
       </main>
+
+      {showQuit && (
+        <div className="modal" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <h3 className="font-semibold text-lg mb-2">¿Salir de EtiquetaUniBody?</h3>
+            <p className="text-sm text-zinc-400 mb-4">
+              La aplicación dejará de imprimir etiquetas y de guardar la información de los equipos en la base de datos.
+              Los registros pendientes de sincronización con SQL Server se enviarán cuando vuelvas a abrir la app.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button className="btn ghost" onClick={() => setShowQuit(false)}>Cancelar</button>
+              <button className="btn danger" onClick={confirmQuit}>Salir y detener</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
