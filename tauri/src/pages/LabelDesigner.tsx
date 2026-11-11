@@ -68,7 +68,7 @@ export default function LabelDesigner() {
     <div className="space-y-4">
       <div className="card p-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="text-xs text-zinc-400">Plantilla</label>
+          <label className="text-xs text-[var(--text-muted)]">Plantilla</label>
           <select className="input" value={selectedId ?? ''} onChange={e => {
             const t = templates.find(x => x.id === Number(e.target.value));
             if (t) selectTemplate(t);
@@ -77,15 +77,15 @@ export default function LabelDesigner() {
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-400">Nombre</label>
+          <label className="text-xs text-[var(--text-muted)]">Nombre</label>
           <input className="input" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div>
-          <label className="text-xs text-zinc-400">Ancho (mm)</label>
+          <label className="text-xs text-[var(--text-muted)]">Ancho (mm)</label>
           <input className="input" type="number" value={wMm} onChange={e => setWMm(Number(e.target.value))} />
         </div>
         <div>
-          <label className="text-xs text-zinc-400">Alto (mm)</label>
+          <label className="text-xs text-[var(--text-muted)]">Alto (mm)</label>
           <input className="input" type="number" value={hMm} onChange={e => setHMm(Number(e.target.value))} />
         </div>
         <button className="btn ghost" onClick={() => { setSelectedId(null); setObjs([]); }}>Nueva</button>
@@ -94,22 +94,22 @@ export default function LabelDesigner() {
       <LabelEditor initial={objs} onSave={handleSaveObjs} />
 
       <div className="card p-4 space-y-3">
-        <h3 className="font-semibold text-zinc-200">Tags del PLC (valores en vivo)</h3>
-        <p className="text-xs text-zinc-400">Usa variables como <code className="text-emerald-400">{'{SERIAL}'}</code>, <code className="text-emerald-400">{'{BATCH}'}</code> en el contenido de los campos de texto. Los valores se capturan al dispararse el trigger.</p>
+        <h3 className="font-semibold text-[var(--text)]">Tags del PLC (valores en vivo)</h3>
+        <p className="text-xs text-[var(--text-muted)]">Usa variables como <code className="text-emerald-400">{'{SERIAL}'}</code>, <code className="text-emerald-400">{'{BATCH}'}</code> en el contenido de los campos de texto. Los valores se capturan al dispararse el trigger.</p>
         {plcTags ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {Object.entries(plcTags).filter(([k]) => k !== '_vars').map(([k, v]: any) => (
-              <div key={k} className="flex items-center justify-between p-2 rounded bg-zinc-800/50 border border-zinc-700">
+              <div key={k} className="flex items-center justify-between p-2 rounded bg-[var(--surface-2)]/50 border border-[var(--border)]">
                 <div>
-                  <div className="text-xs text-zinc-400">{v.name}</div>
-                  <div className="text-xs font-mono text-zinc-500">{v.tag_name}</div>
+                  <div className="text-xs text-[var(--text-muted)]">{v.name}</div>
+                  <div className="text-xs font-mono text-[var(--text-muted)]">{v.tag_name}</div>
                 </div>
                 <div className="text-sm font-mono text-emerald-400">{v.value === null ? '—' : String(v.value)}</div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-xs text-zinc-500">Cargando tags…</div>
+          <div className="text-xs text-[var(--text-muted)]">Cargando tags…</div>
         )}
       </div>
 
@@ -123,7 +123,7 @@ export default function LabelDesigner() {
           <input className="input" value={previewCtx.BATCH} onChange={e => setPreviewCtx({ ...previewCtx, BATCH: e.target.value })} placeholder="BATCH de prueba" />
         </div>
         {zpl && (
-          <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-300 overflow-auto max-h-64">{zpl}</pre>
+          <pre className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3 text-xs text-[var(--text)] overflow-auto max-h-64">{zpl}</pre>
         )}
       </div>
     </div>

@@ -80,6 +80,14 @@ def _sync_all():
     for rid in ids:
         _sync_one(rid)
 
+def _sync_loop():
+    while not _poll_stop.is_set():
+        try:
+            _sync_all()
+        except Exception as e:
+            print("[sync-loop]", e)
+        time.sleep(10)
+
 def _cfg_get(key, default=""):
     from ..database import local_db
     from ..models import Configuration
@@ -660,7 +668,9 @@ def audit_sync():
         s.close()
     return {"ok": True, "pending": pending}
 
-@router.get("/system/accent-color")
+@router.get("/health")
+def health():
+    return {"status": "ok"}
 def accent_color():
     # Lee el color de acento de Windows desde el registro
     try:

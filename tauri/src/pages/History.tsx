@@ -28,7 +28,7 @@ export default function History() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-zinc-400 border-b border-zinc-700">
+              <tr className="text-[var(--text-muted)] border-b border-[var(--border)]">
                 <th className="text-left py-2">ID</th>
                 <th className="text-left py-2">Timestamp</th>
                 <th className="text-left py-2">Serial</th>
@@ -40,7 +40,7 @@ export default function History() {
             </thead>
             <tbody>
               {rows.map(r => (
-                <tr key={r.id} className="border-b border-zinc-800 hover:bg-zinc-800/40">
+                <tr key={r.id} className="border-b border-[var(--border)] hover:bg-[var(--surface-2)]/40">
                   <td className="py-2">{r.id}</td>
                   <td className="py-2 text-xs">{r.timestamp}</td>
                   <td className="py-2 font-mono">{r.serial ?? '—'}</td>
@@ -65,7 +65,7 @@ export default function History() {
             <h3 className="font-semibold">ZPL · ID {selected.id}</h3>
             <button className="btn ghost text-xs" onClick={() => setSelected(null)}>Cerrar</button>
           </div>
-          <pre className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-300 overflow-auto max-h-64">{selected.zpl}</pre>
+          <pre className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3 text-xs text-[var(--text)] overflow-auto max-h-64">{selected.zpl}</pre>
         </div>
       )}
     </div>

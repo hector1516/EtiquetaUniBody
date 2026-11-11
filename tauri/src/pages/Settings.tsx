@@ -45,7 +45,7 @@ export default function Settings() {
 
   const field = (key: string, label: string, type = 'text') => (
     <div>
-      <label className="text-xs text-zinc-400">{label}</label>
+      <label className="text-xs text-[var(--text-muted)]">{label}</label>
       <input className="input" type={type} value={cfg[key] ?? ''} onChange={e => setCfg({ ...cfg, [key]: e.target.value })} />
     </div>
   );
@@ -64,7 +64,7 @@ export default function Settings() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-zinc-400 border-b border-zinc-700">
+              <tr className="text-[var(--text-muted)] border-b border-[var(--border)]">
                 <th className="text-left py-2">Alias</th>
                 <th className="text-left py-2">Tag PLC</th>
                 <th className="text-left py-2">Tipo</th>
@@ -75,7 +75,7 @@ export default function Settings() {
             </thead>
             <tbody>
               {tags.map(t => (
-                <tr key={t.id} className="border-b border-zinc-800">
+                <tr key={t.id} className="border-b border-[var(--border)]">
                   <td className="py-2">{t.name}</td>
                   <td className="py-2 font-mono text-xs">{t.tag_name}</td>
                   <td className="py-2">{t.data_type}</td>
@@ -126,7 +126,7 @@ export default function Settings() {
           <button className="btn ghost" onClick={syncNow} disabled={syncing}>{syncing ? 'Sincronizando…' : 'Sincronizar pendientes'}</button>
         </div>
         {tableStatus && (
-          <div className="text-xs text-zinc-400 mt-2">
+          <div className="text-xs text-[var(--text-muted)] mt-2">
             Conexión SQL: {tableStatus.connected ? '✓ OK' : '✗ Sin conexión'} · Tabla: {tableStatus.table_exists ? '✓ Existe' : '✗ No existe'}
             {tableStatus.error ? ` · ${tableStatus.error}` : ''}
           </div>
@@ -134,8 +134,8 @@ export default function Settings() {
       </div>
 
       <div className="card p-5 space-y-4">
-        <h2 className="font-semibold text-zinc-200">Actualizaciones</h2>
-        <div className="text-xs text-zinc-400">Versión actual: <span className="font-mono text-zinc-200">{appVersion || '1.0.0'}</span></div>
+        <h2 className="font-semibold text-[var(--text)]">Actualizaciones</h2>
+        <div className="text-xs text-[var(--text-muted)]">Versión actual: <span className="font-mono text-[var(--text)]">{appVersion || '1.0.0'}</span></div>
         <div className="flex gap-2">
           <button className="btn ok" disabled={checking} onClick={async () => {
             setChecking(true);
@@ -157,12 +157,12 @@ export default function Settings() {
             }
           }}>{checking ? 'Buscando…' : 'Buscar actualizaciones'}</button>
         </div>
-        {updateStatus && <div className="text-xs text-zinc-400">{updateStatus}</div>}
+        {updateStatus && <div className="text-xs text-[var(--text-muted)]">{updateStatus}</div>}
       </div>
 
       <div className="card p-5 space-y-4">
-        <h2 className="font-semibold text-zinc-200">Exportar / Importar configuración</h2>
-        <p className="text-xs text-zinc-400">Guarda toda la configuración (PLC, impresora, SQL, tags, plantillas) en un archivo JSON para respaldo o para mover a otra PC.</p>
+        <h2 className="font-semibold text-[var(--text)]">Exportar / Importar configuración</h2>
+        <p className="text-xs text-[var(--text-muted)]">Guarda toda la configuración (PLC, impresora, SQL, tags, plantillas) en un archivo JSON para respaldo o para mover a otra PC.</p>
         <div className="flex gap-2">
           <button className="btn ok" onClick={async () => {
             try {

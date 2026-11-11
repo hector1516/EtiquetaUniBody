@@ -61,8 +61,8 @@ export default function IsometricFlow() {
   return (
     <div className="card p-4 overflow-hidden">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-zinc-200">Flujo de trabajo en vivo</h3>
-        <span className="text-xs text-zinc-500">PLC → PC → Impresora / SQL Server</span>
+        <h3 className="font-semibold text-[var(--text)]">Flujo de trabajo en vivo</h3>
+        <span className="text-xs text-[var(--text-muted)]">PLC → PC → Impresora / SQL Server</span>
       </div>
       <svg viewBox="-20 -140 380 380" className="w-full aspect-square max-w-md mx-auto" style={{ background: 'radial-gradient(ellipse at center, #0f172a 0%, #020617 100%)', borderRadius: 12 }}>
         <defs>

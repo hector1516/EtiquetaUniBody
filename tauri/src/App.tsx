@@ -26,6 +26,17 @@ export default function App() {
   const [celebration, setCelebration] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const check = async () => {
@@ -94,7 +105,7 @@ export default function App() {
 
   return (
     <div className="h-full flex">
-      <aside className={`${sidebarOpen ? 'w-56' : 'w-14'} shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950/80 backdrop-blur-md transition-all duration-200`}>
+      <aside className={`${sidebarOpen ? 'w-56' : 'w-14'} shrink-0 flex flex-col border-r transition-all duration-200`} style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
         <div className="px-3 py-4 flex items-center gap-3 border-b border-zinc-800">
           <img src="/logo.png" alt="EtiquetaUniBody" className="w-8 h-8 object-contain shrink-0" />
           {sidebarOpen && (
@@ -119,13 +130,18 @@ export default function App() {
           <span className={`w-2 h-2 rounded-full shrink-0 ${health ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden="true" />
           {sidebarOpen && <span className="text-xs text-zinc-400 truncate">{health ? 'Backend OK' : 'Sin conexión'}</span>}
         </div>
-        <button onClick={() => setSidebarOpen(o => !o)} className="px-3 py-2 border-t border-zinc-800 text-xs text-zinc-500 hover:text-zinc-200 text-left" aria-label="Colapsar sidebar">
+        <button onClick={() => setSidebarOpen(o => !o)} className="px-3 py-2 border-t text-xs hover:text-zinc-200 text-left transition-colors" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }} aria-label="Colapsar sidebar">
           {sidebarOpen ? '◀ Colapsar' : '▶'}
         </button>
+        {sidebarOpen && (
+          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="px-3 py-2 text-xs hover:text-zinc-200 text-left transition-colors" style={{ color: 'var(--text-muted)' }} aria-label="Cambiar tema">
+            {theme === 'dark' ? '☀ Modo claro' : '🌙 Modo oscuro'}
+          </button>
+        )}
       </aside>
 
       <ClickSpark sparkColor="var(--accent)" sparkSize={8} sparkRadius={20} sparkCount={6}>
-        <main className="flex-1 overflow-auto p-6 bg-neutral-950 relative">
+        <main className="flex-1 overflow-auto p-6 relative" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
           {tab === 'dashboard' && <Dashboard events={events} />}
           {tab === 'designer' && <LabelDesigner />}
           {tab === 'history' && <History />}
