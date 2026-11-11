@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; margin: 0; }
+
+/* Apple HIG micro-interactions */
+* { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+button, a, input, select { transition: background-color 120ms, color 120ms, border-color 120ms, transform 80ms, box-shadow 120ms; }
+button:active { transform: scale(0.98); }
+.card { @apply bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl backdrop-blur-md; }
+.btn { @apply px-4 py-2 rounded-lg font-medium transition-all duration-150; }
+.btn.ok { @apply bg-emerald-600 hover:bg-emerald-500 text-white; }
+.btn.danger { @apply bg-red-600 hover:bg-red-500 text-white; }
+.btn.ghost { @apply bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700; }
+.input { @apply bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100 w-full focus:outline-none focus:ring-2 focus:ring-emerald-500; }
+.modal { @apply fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm; }
+.modal-panel { @apply bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl; animation: springIn 240ms cubic-bezier(0.16,1,0.3,1); }
+@keyframes springIn { from { opacity:0; transform: scale(.96) translateY(8px);} to { opacity:1; transform: scale(1) translateY(0);} }

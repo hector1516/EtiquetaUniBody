@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+      - name: Build sidecar
+        run: |
+          pyinstaller backend_entry.py --name etiqueta-backend --onefile --noconsole --distpath tauri/src-tauri/binaries
+          Rename-Item tauri/src-tauri/binaries/etiqueta-backend.exe etiqueta-backend-x86_64-pc-windows-msvc.exe
+      - name: Install frontend deps
+        working-directory: tauri
+        run: npm install
+      - name: Build Tauri
+        working-directory: tauri
+        run: npm run tauri build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: msi
+          path: tauri/src-tauri/target/release/bundle/msi/*.msi
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: msi
+          path: ./artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./artifacts/*
+          generate_release_notes: true

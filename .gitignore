@@ -1,0 +1,15 @@
+node_modules/
+dist/
+target/
+*.db
+*.log
+.env
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+tauri/src-tauri/gen/
+tauri/src-tauri/target/
+tauri/src-tauri/binaries/*.exe
+.DS_Store
