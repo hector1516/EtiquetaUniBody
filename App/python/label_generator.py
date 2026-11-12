@@ -2,14 +2,18 @@
 import json
 import re
 
-DPI_DOTS_PER_MM = 8  # 203 dpi
+DPI_DEFAULT = 203  # Zebra ZT231 default resolution
 
-def _scale(w_mm, h_mm):
+def dots_per_mm(dpi=203):
+    return round(dpi / 25.4)
+
+def _scale(w_mm, h_mm, dpi=203):
+    dpm = dots_per_mm(dpi)
     canvas_w = 560.0
     canvas_h = 340.0
-    sx = (w_mm * DPI_DOTS_PER_MM) / canvas_w
-    sy = (h_mm * DPI_DOTS_PER_MM) / canvas_h
-    return sx, sy
+    sx = (w_mm * dpm) / canvas_w
+    sy = (h_mm * dpm) / canvas_h
+    return sx, sy, dpm
 
 def substitute(text, ctx):
     if not isinstance(text, str):
@@ -31,7 +35,7 @@ def substitute(text, ctx):
         return m.group(0)
     return re.sub(r"\{([^}]+)\}", repl, text)
 
-def canvas_to_zpl(canvas_data, ctx=None, w_mm=100, h_mm=60):
+def canvas_to_zpl(canvas_data, ctx=None, w_mm=100, h_mm=60, dpi=203):
     ctx = ctx or {}
     try:
         t = json.loads(canvas_data) if isinstance(canvas_data, str) else canvas_data
@@ -41,12 +45,12 @@ def canvas_to_zpl(canvas_data, ctx=None, w_mm=100, h_mm=60):
     label = t.get("label", {}) if isinstance(t, dict) else {}
     w_mm = label.get("width_mm", w_mm)
     h_mm = label.get("height_mm", h_mm)
-    sx, sy = _scale(w_mm, h_mm)
+    sx, sy, dpm = _scale(w_mm, h_mm, dpi)
     lines = []
     lines.append("^XA")
     # label size
-    lines.append(f"^PW{int(w_mm*DPI_DOTS_PER_MM)}")
-    lines.append(f"^LL{int(h_mm*DPI_DOTS_PER_MM)}")
+    lines.append(f"^PW{int(w_mm*dpm)}")
+    lines.append(f"^LL{int(h_mm*dpm)}")
     for o in objs:
         try:
             kind = o.get("type")

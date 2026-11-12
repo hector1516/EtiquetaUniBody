@@ -12,6 +12,7 @@ DEFAULT_CONFIGS = [
     ("plc_slot", "1"),
     ("printer_ip", "192.168.1.50"),
     ("printer_port", "9100"),
+    ("printer_dpi", "203"),
     ("sql_server", "192.168.1.200"),
     ("sql_database", "Insight"),
     ("sql_user", ""),

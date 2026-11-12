@@ -68,8 +68,15 @@ export default function Settings() {
           <div className="grid grid-cols-2 gap-2">
             {field('printer_ip', 'IP de la impresora')}
             {field('printer_port', 'Puerto', 'number')}
+            <div>
+              <label className="text-xs text-[var(--text-muted)]">Resolución (DPI)</label>
+              <select className="input" value={cfg.printer_dpi ?? '203'} onChange={e => setCfg({ ...cfg, printer_dpi: e.target.value })}>
+                <option value="203">203 dpi (estándar)</option>
+                <option value="300">300 dpi (alta resolución)</option>
+              </select>
+            </div>
           </div>
-          <button className="btn ok text-sm" onClick={() => saveCfg(['printer_ip', 'printer_port'])}>Guardar impresora</button>
+          <button className="btn ok text-sm" onClick={() => saveCfg(['printer_ip', 'printer_port', 'printer_dpi'])}>Guardar impresora</button>
         </div>
 
         <div className="card p-3 space-y-2 flex-1 min-h-0 overflow-hidden">

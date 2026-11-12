@@ -443,7 +443,8 @@ def _handle_trigger(trigger_tag, tag_list, p):
     finally:
         s.close()
 
-    zpl = canvas_to_zpl(canvas_data, ctx, w_mm, h_mm)
+    dpi = int(_cfg_get("printer_dpi", "203") or 203)
+    zpl = canvas_to_zpl(canvas_data, ctx, w_mm, h_mm, dpi)
 
     # print
     from ..zpl_printer import send_zpl
@@ -564,7 +565,8 @@ def delete_template(tid: int):
 def preview_label(body: PreviewIn):
     from ..label_generator import canvas_to_zpl, build_context
     ctx = build_context(system_vars=body.context or {})
-    zpl = canvas_to_zpl(body.canvas_data, ctx, body.width_mm, body.height_mm)
+    dpi = int(_cfg_get("printer_dpi", "203") or 203)
+    zpl = canvas_to_zpl(body.canvas_data, ctx, body.width_mm, body.height_mm, dpi)
     return {"zpl": zpl}
 
 @router.post("/labels/print")
@@ -586,7 +588,8 @@ def print_label(body: PrintLabelIn):
         finally:
             s.close()
     ctx = build_context(system_vars=body.context or {})
-    zpl = canvas_to_zpl(canvas or "{}", ctx, w_mm, h_mm)
+    dpi = int(_cfg_get("printer_dpi", "203") or 203)
+    zpl = canvas_to_zpl(canvas or "{}", ctx, w_mm, h_mm, dpi)
     ip = _cfg_get("printer_ip", "192.168.1.50")
     port = int(_cfg_get("printer_port", "9100") or 9100)
     res = send_zpl(ip, port, zpl)
